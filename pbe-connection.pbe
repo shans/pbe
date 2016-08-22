@@ -1,0 +1,30 @@
+<dom-module id="pbe-connection">
+<template>
+</template>
+<script>
+Polymer({
+  is: 'pbe-connection',
+
+  create: function() {
+    // TODO: replace express with something much smaller
+    if (global.app == undefined) {
+      var express = require('express');
+      global.app = express();
+      global.app.listen(8080);
+    }
+  },
+
+  attached: function() {
+    console.log('attached a pbe-connection');
+    global.app.get(this.route, function(req, res) {
+      var el = createElement(this.kind);
+      el.addEventListener('ready', function(e) {
+        res.status(200).send(el.response);
+        el.remove();
+      });
+      this.appendChild(el);
+    }.bind(this));
+  }
+});
+</script>
+</dom-module>
