@@ -3,44 +3,60 @@
 var Promise = require('bluebird');
 var fs = Promise.promisifyAll(require('fs'));
 var htmlparser = require('htmlparser2');
+var _eval = require('eval');
+var dom = require('./dom.js');
 
 var debug = true;
 var log = debug ? console.log : function() { }
 
-global.importScript = function(name) {
+/*
+global.importScript = function(name, async) {
   log('importing', name);
-  fs.readFileAsync(name).then(function(data) {
+  var lastSlash = name.lastIndexOf('/');
+  if (lastSlash > -1)
+    var dir = name.substring(0, lastSlash) + '/';
+  else
+    var dir = '';
+  
+  var process = function(data) {
     var handler = new htmlparser.DomHandler(function(error, dom) {
       if (error)
         console.log(error);
       else
-        addElementDefinition(dom);
+        addElementDefinition(dom, dir, name);
     });
     
     var parser = new htmlparser.Parser(handler);
     parser.write(data);
     parser.done();
-  });
+  };
+  
+  if (async) {
+    fs.readFileAsync(name).then(process);
+  } else {
+    var data = fs.readFileSync(name);
+    process(data);
+  }
 }
 
-function addElementDefinition(dom) {
+function addElementDefinition(dom, dir, name) {
   for (var el of dom) {
     if (el.type == 'tag' && el.name == 'dom-module') {
       var elementName = el.attribs.id;
       for (var child of el.children) {
-        runIfScript(child);
+        runIfScript(child, name);
         if (child.type == 'tag' && child.name == 'template')
           registerElementTemplate(elementName, child);
       }
     } else if (el.type == 'tag' && el.name == 'link') {
       if (el.attribs.rel == 'import')
-        importScript(el.attribs.href);
+        var async = el.attribs.hasOwnProperty('async');
+        importScript(dir + el.attribs.href, async);
     } else {
-      runIfScript(el);
+      runIfScript(el, name);
     }
   }
 }
-
 var elements = {};
 
 function elementTemplate(name) {
@@ -80,9 +96,38 @@ function registerElementTemplate(name, templateElement) {
   maybeResolvePendingElements(template);
 }
 
-function runIfScript(tag) {
+function runIfScript(tag, file) {
   if (tag.type == 'script' && tag.name == 'script') {
-    eval(tag.children[0].data);
+    _runScript(tag.children[0].data, file, tag);
+  }
+}
+*/
+
+// TODO this should be part of the DOM model
+function runScript(document, file) {
+  var script = document.createElement("script");
+  script.setAttribute("src", file);
+  document.head.appendChild(script);
+}
+
+/*
+function _runScript(data, file, tag) {
+  console.log('running', file);
+  try {
+    global.context.location = {search: ""};
+    global.context.document.currentScript = tag; // TODO: should be the generated element
+    global.context.document.currentScript.ownerDocument = global.context.document // TODO: this should be automatic
+    global.context = _eval('window=this;window.__proto__=this.Window.prototype;' + data + '\nexports.window=window;\n', file, global.context).window;
+  } catch (e) {
+    console.log('***** ' + e.message);
+    var stackFrames = e.stack.split('\n');
+    for (var i = 1; i < stackFrames.length; i++) {
+      var context = stackFrames[i];
+      var lineInfo = context.split(':');
+      var line = Number(lineInfo[lineInfo.length - 2]);
+      console.log('\t' + context);
+      console.log('\t' + data.split('\n')[line - 1]);
+    }
   }
 }
 
@@ -92,53 +137,10 @@ function Polymer(dict) {
   maybeResolvePendingElements(template);
 }
 
-var Element = {
-  addEventListener: function(name, f) {
-    if (this._listeners == undefined)
-      this._listeners = {};
-    if (this._listeners[name] == undefined)
-      this._listeners[name] = [];
-    this._listeners[name].push(f);
-    log('event listener for', this.name, name);
-  },
-  fire: function(name, event) {
-    Promise.resolve().then(function() {
-      this._fireNow(name, event);
-    }.bind(this));
-  },
-  _fireNow: function(name, event) {
-    log('fire event for', this.name, name);
-    if (this._listeners && this._listeners[name]) {
-      for (var f of this._listeners[name])
-        f(event);
-      return;
-    }
-    this.parent && this.parent._fireNow(name, event);
-  },
-  remove: function() {
-  },
-  attach: function() {
-    for (var child of this.children)
-      child.attach();
-    if (this.template && this.template.defn.attached)
-      this.template.defn.attached.call(this);
-    this.isAttached = true;
-  },
-  appendChild: function(child) {
-    child.parent = this;
-    this.children.push(child);
-    if (this.isAttached)
-      child.attach();
-  },
-  get innerHTML() {
-    return "hello, world!";
-  }
-}
-
 global.createElement = function(name, attribs) {
   log('creating', name);
   var element = {name: name, type: 'element', children: [], isAttached: false};
-  element.__proto__ = Element;
+  element.__proto__ = dom.Element;
   if (attribs !== undefined) {
     for (var attrib in attribs)
       element[attrib] = attribs[attrib];
@@ -148,20 +150,21 @@ global.createElement = function(name, attribs) {
   maybeResolvePendingElements(template);
   return element;
 }
+global.context.document.createElement = global.createElement
+*/
 
-var TextNode = {
-  attach: function() { }
-}
+// TODO: this needs cleaning up
 
-global.createTextNode = function(text) {
-  var textNode = {type: 'text', text: text};
-  textNode.__proto__ = TextNode;
-  return textNode;
-} 
 
-global.createRoot = function(file, name) {
-  importScript(file);
-  var root = createElement(name);
-  root.parent = "TOP_OF_DOC";
-  root.attach();
+global.createApp = function(file, name) {
+  var document = dom.document;
+  var link = document.createElement('link');
+  link.setAttribute('rel', 'import');
+  link.setAttribute('href', file);
+  console.log('appending link');
+  document.body.appendChild(link);
+  runScript(document, 'bower_components/webcomponentsjs/webcomponents.js');
+  // importScript(file);
+  // var elt = dom.document.createElement(name);
+  // dom.document.body.appendChild(elt);
 }

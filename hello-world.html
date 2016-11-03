@@ -1,12 +1,15 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
-<link rel="import" href="pbe-connection.pbe">
-<link rel="import" href="pbe-literal.pbe">
+<link rel="import" href="pbe-connection.html">
+<link rel="import" href="pbe-literal.html">
 
 <dom-module id="hello-world">
 <template>
   <pbe-connection kind="hello-world-connection" route="/">
 </template>
 <script>
+
+console.log("!!!???!!!???!!! GEEEEETTT OOOOOOUUUUUUUTTTTTT");
+
 Polymer({
   is: 'hello-world',
   attached: function() { console.log('attached a hello-world'); }
@@ -28,4 +31,9 @@ Polymer({
 });
 </script>
 </dom-module>
+
+<script>
+console.log("is this thing on?");
+</script>
+<hello-world></hello-world>
 
