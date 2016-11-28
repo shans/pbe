@@ -3,7 +3,7 @@
 
 <dom-module id="hello-world">
 <template>
-  <pbe-connection kind="hello-world-connection" route="/">
+  <pbe-connection kind="hello-world-connection" route="/:key">
 </template>
 <script>
 Polymer({
@@ -15,7 +15,7 @@ Polymer({
 
 <dom-module id="hello-world-connection">
 <template>
-  <pbe-literal contents="{{response}}">Hello, <b>World!</b> HOW ARE YOU</pbe-literal>
+  <pbe-literal contents="{{response}}">Hello, <b>{{key}}</b> HOW ARE YOU</pbe-literal>
 </template>
 <script>
 Polymer({

@@ -70,11 +70,28 @@ function createBindingOrAttribute(element, context, attrib, value) {
   return true;
 }
 
+function createTextBindingOrTextNode(context, data) {
+  var result = /{{(.*)}}/.exec(data);
+  if (result !== null) {
+    // THIS IS PROBABLY WRONG. SHOULD DO THIS WITH EVENTS INSTEAD.
+    data = data.replace(/{{.*}}/, context[result[1]]);
+    var text_node = createTextNode(data);
+    if (context[result[1]] == undefined) {
+      Object.defineProperty(context, result[1], {
+        get() { return context["_" + result[1]]; },
+        set(v) { context["_" + result[1]] = v; text_node.text = v; }
+      });
+    }
+    return text_node;
+  }
+  return createTextNode(data);
+}
+
 function expandTemplate(template, element) {
   function processChildren(childList, parentElement) {
     for (var el of childList) {
       if (el.type == 'text') {
-        parentElement.children.push(createTextNode(el.data));
+        parentElement.children.push(createTextBindingOrTextNode(element, el.data));
       } else {
         var created_element = createElement(el.name);
         for (var attrib in el.attribs)
