@@ -49,18 +49,54 @@ function elementTemplate(name) {
   return elements[name];
 }
 
+function createBindingOrAttribute(element, context, attrib, value) {
+  var result = /{{(.*)}}/.exec(value);
+  if (result == null) {
+    element[attrib] = value;
+    return false;
+  }
+  value = result[1];
+  var bindTo = result[1];
+  console.log('defineProperty', element.dump(), attrib);
+  Object.defineProperty(element, attrib, {
+    get() { return this["_" + attrib]; },
+    set(v) {
+      console.log('set', attrib, 'to', v, 'on', this.dump());
+      console.log('set', value, 'on', context.dump());
+      context[value] = v;
+      this["_" + attrib] = v;
+    }
+  });
+  return true;
+}
+
+function expandTemplate(template, element) {
+  function processChildren(childList, parentElement) {
+    for (var el of childList) {
+      if (el.type == 'text') {
+        parentElement.children.push(createTextNode(el.data));
+      } else {
+        var created_element = createElement(el.name);
+        for (var attrib in el.attribs)
+          createBindingOrAttribute(created_element, element, attrib, el.attribs[attrib]);
+        parentElement.appendChild(created_element);
+        processChildren(el.children, parentElement.children[parentElement.children.length - 1]);
+      }
+    }
+  }
+  processChildren(template.children, element);
+} 
+
 function resolve(element, template) {
   log('resolving', element.name);
   element.template = template;
   template.defn.create && template.defn.create.call(element);
-  for (var el of template.template.children) {
-    if (el.type == 'text')
-      element.children.push(createTextNode(el.data)); // TODO: fix
-    else
-      element.appendChild(createElement(el.name, el.attribs));
-  }
-  if (element.isAttached)
+
+  expandTemplate(template.template, element);
+
+  if (element.isAttached) {
     template.defn.attached && template.defn.attached.call(element);
+  }
 }
 
 // TODO: should this only resolve if elements referenced by the template are resolved too?
@@ -120,8 +156,9 @@ var Element = {
   attach: function() {
     for (var child of this.children)
       child.attach();
-    if (this.template && this.template.defn.attached)
+    if (this.template && this.template.defn.attached) {
       this.template.defn.attached.call(this);
+    }
     this.isAttached = true;
   },
   appendChild: function(child) {
@@ -131,7 +168,17 @@ var Element = {
       child.attach();
   },
   get innerHTML() {
-    return "hello, world!";
+    var s = '';
+    for (var child of this.children) {
+      if (child.type == 'element')
+        s += `<${child.name}>${child.innerHTML}</${child.name}>`;
+      else
+        s += child.text;
+    }
+    return s;
+  },
+  dump: function() {
+    return `<${this.name}>${this.innerHTML}</${this.name}>`;
   }
 }
 

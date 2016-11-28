@@ -1,4 +1,4 @@
 'use strict';
 
 var pbe = require('./pbe');
-createRoot('hello-world.pbe', 'hello-world');
+createRoot('hello-world.html', 'hello-world');

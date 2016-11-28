@@ -1,5 +1,5 @@
-<link rel="import" href="pbe-connection.pbe">
-<link rel="import" href="pbe-literal.pbe">
+<link rel="import" href="pbe-connection.html">
+<link rel="import" href="pbe-literal.html">
 
 <dom-module id="hello-world">
 <template>
@@ -15,14 +15,14 @@ Polymer({
 
 <dom-module id="hello-world-connection">
 <template>
-  <pbe-literal contents="{{response}}">Hello, World!</pbe-literal>
+  <pbe-literal contents="{{response}}">Hello, <b>World!</b> HOW ARE YOU</pbe-literal>
 </template>
 <script>
 Polymer({
   is: 'hello-world-connection',
   attached: function() {
     console.log('attached a hello-world-connection');
-    this.response = this.children[1].contents;
+    // this.response = this.children[1].contents;
   },
 });
 </script>
