@@ -1,0 +1,14 @@
+<dom-module id="pbe-literal">
+<template>
+</template>
+<script>
+Polymer({
+  is: 'pbe-literal',
+  attached: function() { 
+    this.contents = this.innerHTML;
+    this.fire('data-ready', {});
+    console.log('pbe-literal ready', this.contents);
+  }
+});
+</script>
+</dom-module>
