@@ -9,8 +9,9 @@
     "deploy": "gcloud app deploy"
   },
   "dependencies": {
+    "@google-cloud/datastore": "^0.5.1",
+    "bluebird": "*",
     "express": "^4.13.4",
-    "htmlparser2": "*",
-    "bluebird": "*"
+    "htmlparser2": "*"
   }
 }

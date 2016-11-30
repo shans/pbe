@@ -4,10 +4,12 @@
 <script>
 Polymer({
   is: 'pbe-literal',
+  properties: {
+    contents: { notify: true, value: "" }
+  },
   attached: function() { 
     this.contents = this.innerHTML;
     this.fire('data-ready', {});
-    console.log('pbe-literal ready', this.contents);
   }
 });
 </script>

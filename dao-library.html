@@ -1,0 +1,24 @@
+<script src='ds.js'></script>
+
+<dom-module id="dao-library">
+<template>
+</template>
+<script>
+Polymer({
+  is: 'dao-library',
+  properties: {
+    key: { value: undefined, observer: "keyChanged" },
+    data: { value: function() { return {} } },
+    autosave: { type: Boolean, value: false }
+  },
+  save: function() {
+    save(this, "Library").then(this.fire('data-stable'));
+  },
+  attached: function() {
+    console.log('dao-library attached');
+    if (this.autosave)
+      this.save();
+  }
+});
+</script>
+</dom-module>

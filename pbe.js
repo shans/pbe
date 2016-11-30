@@ -49,38 +49,51 @@ function elementTemplate(name) {
   return elements[name];
 }
 
+function hookProperty(element, property, behavior) {
+  var functionListName = `_${property}_on_update`;
+  var innerPropertyName = `_${property}`;
+  if (element[functionListName] == undefined) {
+    element[functionListName] = [];
+    Object.defineProperty(element, property, {
+      get() { return this[innerPropertyName]; },
+      set(v) { this[innerPropertyName] = v; element[functionListName].forEach(f => f(v)); }
+    });
+  }
+  element[functionListName].push(behavior);
+}
+
 function createBindingOrAttribute(element, context, attrib, value) {
+  console.log('cBoA', element.name, context.name, attrib, value);
   var result = /{{(.*)}}/.exec(value);
   if (result == null) {
     element[attrib] = value;
     return false;
   }
   value = result[1];
+  var funcMatch = /.*\(.*\)/
+  if (funcMatch.exec(value)) {
+    value = value.split("(");
+    var funcName = value[0];
+    var args = value[1].split(")")[0].split(",").map(a => a.trim());
+    args.forEach(arg => hookProperty(context, arg, v => {
+      element[attrib] = context[funcName].apply(context, args.map(a => context[a]));
+    }));
+    return true;
+  }
   var bindTo = result[1];
-  console.log('defineProperty', element.dump(), attrib);
-  Object.defineProperty(element, attrib, {
-    get() { return this["_" + attrib]; },
-    set(v) {
-      console.log('set', attrib, 'to', v, 'on', this.dump());
-      console.log('set', value, 'on', context.dump());
-      context[value] = v;
-      this["_" + attrib] = v;
-    }
-  });
+  // note: this uses sync events in native polymer 1.0. It's probably fine
+  // to do this instead though.
+  hookProperty(element, attrib, v => context[value] = v);
   return true;
 }
 
 function createTextBindingOrTextNode(context, data) {
   var result = /{{(.*)}}/.exec(data);
   if (result !== null) {
-    // THIS IS PROBABLY WRONG. SHOULD DO THIS WITH EVENTS INSTEAD.
     data = data.replace(/{{.*}}/, context[result[1]]);
     var text_node = createTextNode(data);
     if (context[result[1]] == undefined) {
-      Object.defineProperty(context, result[1], {
-        get() { return context["_" + result[1]]; },
-        set(v) { context["_" + result[1]] = v; text_node.text = v; }
-      });
+      hookProperty(context, result[1], v => text_node.text = v);
     }
     return text_node;
   }
@@ -95,6 +108,7 @@ function expandTemplate(template, element) {
       } else {
         var created_element = createElement(el.name);
         for (var attrib in el.attribs)
+          // <created_element attrib={{thing in attribs[attrib]}}>, host context is element
           createBindingOrAttribute(created_element, element, attrib, el.attribs[attrib]);
         parentElement.appendChild(created_element);
         processChildren(el.children, parentElement.children[parentElement.children.length - 1]);
@@ -110,6 +124,10 @@ function resolve(element, template) {
   template.defn.create && template.defn.create.call(element);
 
   expandTemplate(template.template, element);
+
+  for (var fn in template.defn) {
+    (function(fn) { element[fn] = function() { return template.defn[fn].apply(element, arguments); }; })(fn);
+  }
 
   if (element.isAttached) {
     template.defn.attached && template.defn.attached.call(element);
@@ -135,7 +153,13 @@ function registerElementTemplate(name, templateElement) {
 
 function runIfScript(tag) {
   if (tag.type == 'script' && tag.name == 'script') {
-    eval(tag.children[0].data);
+    if (tag.attribs.src == undefined)
+      eval(tag.children[0].data);
+    else {
+      var x = require('./' + tag.attribs.src);
+      for (var key in x)
+        global[key] = x[key];
+    }
   }
 }
 
@@ -166,7 +190,7 @@ var Element = {
         f(event);
       return;
     }
-    this.parent && this.parent._fireNow(name, event);
+    this.parent && this.parent._fireNow && this.parent._fireNow(name, event);
   },
   remove: function() {
   },
@@ -195,7 +219,7 @@ var Element = {
     return s;
   },
   dump: function() {
-    return `<${this.name}>${this.innerHTML}</${this.name}>`;
+    return `<${this.name}>${this.innerHTML.trim()}</${this.name}>`;
   }
 }
 

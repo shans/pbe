@@ -1,14 +1,33 @@
 <link rel="import" href="pbe-connection.html">
 <link rel="import" href="pbe-literal.html">
+<link rel="import" href="dao-library.html">
 
 <dom-module id="hello-world">
 <template>
-  <pbe-connection kind="hello-world-connection" route="/:key">
+  <pbe-connection kind="hello-world-connection" route="/hello/:key"></pbe-connection>
+  <pbe-connection kind="save-connection" route="/save/:author/:library/:likes"></pbe-connection>
 </template>
 <script>
 Polymer({
   is: 'hello-world',
   attached: function() { console.log('attached a hello-world'); }
+});
+</script>
+</dom-module>
+
+<dom-module id="save-connection">
+<template>
+  <pbe-literal contents="{{response}}">
+    Saved library <span>{{author}}</span>/<span>{{library}}</span> with <span>{{likes}}</span> likes
+  </pbe-literal>
+  <dao-library key="{{makeKey(author, library)}}" data="{{makeData(author, library, likes)}}" autoSave='true'></dao-library>
+</template>
+</dom-module>
+<script>
+Polymer({
+  is: 'save-connection',
+  makeKey(a, l) { return `${a}/${l}`; },
+  makeData(a, lib, l) { return {author: a, library: lib, likes: l}; }
 });
 </script>
 </dom-module>
@@ -20,10 +39,6 @@ Polymer({
 <script>
 Polymer({
   is: 'hello-world-connection',
-  attached: function() {
-    console.log('attached a hello-world-connection');
-    // this.response = this.children[1].contents;
-  },
 });
 </script>
 </dom-module>
