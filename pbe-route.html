@@ -1,0 +1,35 @@
+<dom-module id="pbe-route">
+<template>
+</template>
+<script>
+Polymer({
+  is: 'pbe-route',
+
+  create: function() {
+    // TODO: replace express with something much smaller
+    if (global.app == undefined) {
+      var express = require('express');
+      global.app = express();
+      global.app.listen(8080);
+    }
+
+  },
+
+  attached: function() {
+    console.log('attached a pbe-route');
+    global.app.get(this.path, function(req, res) {
+      var el = createElement(this.handler);
+      var data = {}
+      for (var param in req.params) {
+        data[param] = req.params[param];
+      }
+      el.data = data;
+      // TODO consider using response.content, though this will mean that handlers must import
+      // a behavior to set up 'response' as a property.
+      el.dataReady.then(() => { res.status(200).send(el.response); el.remove(); });
+      this.appendChild(el);
+    }.bind(this));
+  }
+});
+</script>
+</dom-module>
