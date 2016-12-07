@@ -1,12 +1,12 @@
-<link rel="import" href="pbe-connection.html">
+<link rel="import" href="pbe-route.html">
 <link rel="import" href="pbe-literal.html">
 <link rel="import" href="dao-library.html">
 
 <dom-module id="hello-world">
 <template>
-  <pbe-connection kind="hello-world-connection" route="/hello/:key"></pbe-connection>
-  <pbe-connection kind="save-connection" route="/save/:author/:library/:likes"></pbe-connection>
-  <pbe-connection kind="get-connection" route="/load/:author/:library"></pbe-connection>
+  <pbe-route kind="hello-world-connection" route="/hello/:key"></pbe-route>
+  <pbe-route kind="save-connection" route="/save/:author/:library/:likes"></pbe-route>
+  <pbe-route kind="get-connection" route="/load/:author/:library"></pbe-route>
 </template>
 <script>
 Polymer({
@@ -31,7 +31,7 @@ Polymer({
   properties: {
     dataReady: { computed: "all(fragmentReady, daoReady)" }
   }, 
-  all: function() { console.log('!-----!, here'); var p = Promise.all(arguments); console.log(p); return p; }
+  all: function() { return Promise.all(arguments); }
 });
 </script>
 </dom-module>
