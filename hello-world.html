@@ -1,5 +1,5 @@
 <link rel="import" href="pbe-route.html">
-<link rel="import" href="pbe-literal.html">
+<link rel="import" href="pbe-fragment.html">
 <link rel="import" href="dao-library.html">
 
 <dom-module id="hello-world">
@@ -18,9 +18,9 @@ Polymer({
 
 <dom-module id="save-handler">
 <template>
-  <pbe-literal contents="{{response}}" after="{{fragmentReady}}">
+  <pbe-fragment contents="{{response}}" after="{{fragmentReady}}">
     Saved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
-  </pbe-literal>
+  </pbe-fragment>
   <dao-library key="{{makeKey(data.author, data.library)}}" data="{{data}}" autoSave='true' after="{{daoReady}}"></dao-library>
 </template>
 </dom-module>
@@ -38,9 +38,9 @@ Polymer({
 
 <dom-module id="get-handler">
 <template>
-  <pbe-literal contents="{{response}}" await="{{dataStable}}" after="{{dataReady}}">
+  <pbe-fragment contents="{{response}}" await="{{dataStable}}" after="{{dataReady}}">
     Retrieved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
-  </pbe-literal>
+  </pbe-fragment>
   <dao-library key="{{makeKey(data.author, data.library)}}" data="{{data}}" after="{{dataStable}}" autoLoad='true'></dao-library>
 </template>
 <script>
@@ -53,9 +53,9 @@ Polymer({
 
 <dom-module id="hello-world-handler">
 <template>
-  <pbe-literal contents="{{response}}" after="{{dataReady}}">
+  <pbe-fragment contents="{{response}}" after="{{dataReady}}">
     Hello, <b>{{data.key}}</b> HOW ARE YOU
-  </pbe-literal>
+  </pbe-fragment>
 </template>
 <script>
 Polymer({
