@@ -4,9 +4,9 @@
 
 <dom-module id="hello-world">
 <template>
-  <pbe-route kind="hello-world-connection" route="/hello/:key"></pbe-route>
-  <pbe-route kind="save-connection" route="/save/:author/:library/:likes"></pbe-route>
-  <pbe-route kind="get-connection" route="/load/:author/:library"></pbe-route>
+  <pbe-route handler="hello-world-handler" path="/hello/:key"></pbe-route>
+  <pbe-route handler="save-handler" path="/save/:author/:library/:likes"></pbe-route>
+  <pbe-route handler="get-handler" path="/load/:author/:library"></pbe-route>
 </template>
 <script>
 Polymer({
@@ -16,7 +16,7 @@ Polymer({
 </script>
 </dom-module>
 
-<dom-module id="save-connection">
+<dom-module id="save-handler">
 <template>
   <pbe-literal contents="{{response}}" after="{{fragmentReady}}">
     Saved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
@@ -26,7 +26,7 @@ Polymer({
 </dom-module>
 <script>
 Polymer({
-  is: 'save-connection',
+  is: 'save-handler',
   makeKey(a, l) { return `${a}/${l}`; },
   properties: {
     dataReady: { computed: "all(fragmentReady, daoReady)" }
@@ -36,7 +36,7 @@ Polymer({
 </script>
 </dom-module>
 
-<dom-module id="get-connection">
+<dom-module id="get-handler">
 <template>
   <pbe-literal contents="{{response}}" await="{{dataStable}}" after="{{dataReady}}">
     Retrieved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
@@ -45,13 +45,13 @@ Polymer({
 </template>
 <script>
 Polymer({
-  is: 'get-connection',
+  is: 'get-handler',
   makeKey(a, l) { return `${a}/${l}`; },
 });
 </script>
 </dom-module>
 
-<dom-module id="hello-world-connection">
+<dom-module id="hello-world-handler">
 <template>
   <pbe-literal contents="{{response}}" after="{{dataReady}}">
     Hello, <b>{{data.key}}</b> HOW ARE YOU
@@ -59,7 +59,7 @@ Polymer({
 </template>
 <script>
 Polymer({
-  is: 'hello-world-connection',
+  is: 'hello-world-handler',
 });
 </script>
 </dom-module>
