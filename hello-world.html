@@ -19,9 +19,9 @@ Polymer({
 <dom-module id="save-handler">
 <template>
   <pbe-fragment contents="{{response}}" after="{{fragmentReady}}">
-    Saved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
+    Saved library <span>{{route.author}}</span>/<span>{{route.library}}</span> with <span>{{route.likes}}</span> likes
   </pbe-fragment>
-  <dao-library key="{{makeKey(data.author, data.library)}}" data="{{data}}" autoSave='true' after="{{daoReady}}"></dao-library>
+  <dao-library key="{{makeKey(route.author, route.library)}}" data="{{route}}" autoSave='true' after="{{daoReady}}"></dao-library>
 </template>
 </dom-module>
 <script>
@@ -29,7 +29,7 @@ Polymer({
   is: 'save-handler',
   makeKey(a, l) { return `${a}/${l}`; },
   properties: {
-    dataReady: { computed: "all(fragmentReady, daoReady)" }
+    responseReady: { computed: "all(fragmentReady, daoReady)" }
   }, 
   all: function() { return Promise.all(arguments); }
 });
@@ -38,10 +38,10 @@ Polymer({
 
 <dom-module id="get-handler">
 <template>
-  <pbe-fragment contents="{{response}}" await="{{dataStable}}" after="{{dataReady}}">
-    Retrieved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
+  <pbe-fragment contents="{{response}}" await="{{dataStable}}" after="{{responseReady}}">
+    Retrieved library <span>{{route.author}}</span>/<span>{{route.library}}</span> with <span>{{route.likes}}</span> likes
   </pbe-fragment>
-  <dao-library key="{{makeKey(data.author, data.library)}}" data="{{data}}" after="{{dataStable}}" autoLoad='true'></dao-library>
+  <dao-library key="{{makeKey(route.author, route.library)}}" data="{{route}}" after="{{dataStable}}" autoLoad='true'></dao-library>
 </template>
 <script>
 Polymer({
@@ -53,8 +53,8 @@ Polymer({
 
 <dom-module id="hello-world-handler">
 <template>
-  <pbe-fragment contents="{{response}}" after="{{dataReady}}">
-    Hello, <b>{{data.key}}</b> HOW ARE YOU
+  <pbe-fragment contents="{{response}}" after="{{responseReady}}">
+    Hello, <b>{{route.key}}</b> HOW ARE YOU
   </pbe-fragment>
 </template>
 <script>
