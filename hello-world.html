@@ -6,6 +6,7 @@
 <template>
   <pbe-connection kind="hello-world-connection" route="/hello/:key"></pbe-connection>
   <pbe-connection kind="save-connection" route="/save/:author/:library/:likes"></pbe-connection>
+  <pbe-connection kind="get-connection" route="/load/:author/:library"></pbe-connection>
 </template>
 <script>
 Polymer({
@@ -17,24 +18,44 @@ Polymer({
 
 <dom-module id="save-connection">
 <template>
-  <pbe-literal contents="{{response}}">
-    Saved library <span>{{author}}</span>/<span>{{library}}</span> with <span>{{likes}}</span> likes
+  <pbe-literal contents="{{response}}" after="{{fragmentReady}}">
+    Saved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
   </pbe-literal>
-  <dao-library key="{{makeKey(author, library)}}" data="{{makeData(author, library, likes)}}" autoSave='true'></dao-library>
+  <dao-library key="{{makeKey(data.author, data.library)}}" data="{{data}}" autoSave='true' after="{{daoReady}}"></dao-library>
 </template>
 </dom-module>
 <script>
 Polymer({
   is: 'save-connection',
   makeKey(a, l) { return `${a}/${l}`; },
-  makeData(a, lib, l) { return {author: a, library: lib, likes: l}; }
+  properties: {
+    dataReady: { computed: "all(fragmentReady, daoReady)" }
+  }, 
+  all: function() { console.log('!-----!, here'); var p = Promise.all(arguments); console.log(p); return p; }
+});
+</script>
+</dom-module>
+
+<dom-module id="get-connection">
+<template>
+  <pbe-literal contents="{{response}}" await="{{dataStable}}" after="{{dataReady}}">
+    Retrieved library <span>{{data.author}}</span>/<span>{{data.library}}</span> with <span>{{data.likes}}</span> likes
+  </pbe-literal>
+  <dao-library key="{{makeKey(data.author, data.library)}}" data="{{data}}" after="{{dataStable}}" autoLoad='true'></dao-library>
+</template>
+<script>
+Polymer({
+  is: 'get-connection',
+  makeKey(a, l) { return `${a}/${l}`; },
 });
 </script>
 </dom-module>
 
 <dom-module id="hello-world-connection">
 <template>
-  <pbe-literal contents="{{response}}">Hello, <b>{{key}}</b> HOW ARE YOU</pbe-literal>
+  <pbe-literal contents="{{response}}" after="{{dataReady}}">
+    Hello, <b>{{data.key}}</b> HOW ARE YOU
+  </pbe-literal>
 </template>
 <script>
 Polymer({

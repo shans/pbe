@@ -9,15 +9,23 @@ Polymer({
   properties: {
     key: { value: undefined, observer: "keyChanged" },
     data: { value: function() { return {} } },
-    autosave: { type: Boolean, value: false }
+    autosave: { type: Boolean, value: false },
+    isDataFetchObject: true,
+    after: { value: function() { return new Promise(function(resolve, reject) { this.done = resolve; }.bind(this)); } }
   },
   save: function() {
-    save(this, "Library").then(this.fire('data-stable'));
+    // TODO: make events look more like web platform events
+    save(this, "Library").then(() => this.done());
+  },
+  load: function() {
+    get(this, "Library").then(() => this.done());
   },
   attached: function() {
     console.log('dao-library attached');
     if (this.autosave)
       this.save();
+    if (this.autoload)
+      this.load();
   }
 });
 </script>

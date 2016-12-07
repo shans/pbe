@@ -9,18 +9,18 @@ var log = debug ? console.log : function() { }
 
 global.importScript = function(name) {
   log('importing', name);
-  fs.readFileAsync(name).then(function(data) {
-    var handler = new htmlparser.DomHandler(function(error, dom) {
-      if (error)
-        console.log(error);
-      else
-        addElementDefinition(dom);
-    });
-    
-    var parser = new htmlparser.Parser(handler);
-    parser.write(data);
-    parser.done();
+  var data = fs.readFileSync(name);
+
+  var handler = new htmlparser.DomHandler(function(error, dom) {
+    if (error)
+      console.log(error);
+    else
+      addElementDefinition(dom);
   });
+  
+  var parser = new htmlparser.Parser(handler);
+  parser.write(data);
+  parser.done();
 }
 
 function addElementDefinition(dom) {
@@ -49,21 +49,104 @@ function elementTemplate(name) {
   return elements[name];
 }
 
-function hookProperty(element, property, behavior) {
-  var functionListName = `_${property}_on_update`;
-  var innerPropertyName = `_${property}`;
-  if (element[functionListName] == undefined) {
-    element[functionListName] = [];
-    Object.defineProperty(element, property, {
-      get() { return this[innerPropertyName]; },
-      set(v) { this[innerPropertyName] = v; element[functionListName].forEach(f => f(v)); }
-    });
+class ChangeBus {
+  constructor(context) {
+    this.context = context;
+    this.paths = {};
+  }  
+
+  _getRegistrations(registrationObject, pathComponent, isRoot) {
+    if (registrationObject.paths[pathComponent] == undefined) {
+      registrationObject.paths[pathComponent] = { paths: {}, objects: [], functions: [] };
+      if (isRoot)
+        this.hookProperty(this.context, pathComponent, [pathComponent], registrationObject.paths[pathComponent]);
+    }
+    return registrationObject.paths[pathComponent];
   }
-  element[functionListName].push(behavior);
-}
+
+  static pathComponents(path) {
+    return path.split('.');
+  }
+
+  hookProperty(object, objectName, components, regBase) {
+    var ctx = this;
+    if (regBase.localObject == undefined) {
+      regBase.localObject = object[objectName];
+      console.log(`hookProperty set ${components} to ${JSON.stringify(object[objectName])} (${objectName})`);
+    }
+    Object.defineProperty(object, objectName, {
+      get() { return regBase.localObject; },
+      set(v) { ctx.onChange(components, v); }
+    });
+  };
+
+  getRegistrationsFor(components) {
+    var registrations = this;
+    var isRoot = true;
+    for (var i = 0; i < components.length; i++) {
+      registrations = this._getRegistrations(registrations, components[i], isRoot);
+      isRoot = false;
+    }
+    return registrations;
+  }
+
+  registerPath(object, path, name) {
+    console.log(`registerPath(${object.dump()}, ${path}, ${name})`);
+    var components = ChangeBus.pathComponents(path);
+    var registrations = this.getRegistrationsFor(components);
+
+    for (var registeredObject of registrations.objects)
+      if (registeredObject.object == object && registeredObject.path == name)
+        return;
+ 
+    registrations.objects.push({object: object, path: name});
+    this.hookProperty(object, name, components, registrations);
+  }
+
+  registerFunction(object, fn, args, name) {
+    console.log(`registerFunction(${object.dump()}, ${fn}, ${args}, ${name})`);
+    args = args.map(a => ChangeBus.pathComponents(a));
+    args.forEach(arg => {
+      var registrations = this.getRegistrationsFor(arg);
+      registrations.functions.push({name: fn, args: args, object: object, property: name});
+    });
+    object[name] = this.context[fn].apply(this.context, args.map(a => this.getRegistrationsFor(a).localObject));
+  }
+
+  onChange(components, value) {
+    console.log(`onChange(${components}, ${JSON.stringify(value)})`);
+    var registrations = this.getRegistrationsFor(components);
+    this._onChange(registrations, value);
+  }
+
+  _onChange(registrations, value) {
+    registrations.localObject = value;
+    for (var subPath in registrations.paths)
+      this._onChange(registrations.paths[subPath], value[subPath]); 
+    for (var fn of registrations.functions) {
+      var args = fn.args.map(a => this.getRegistrationsFor(a).localObject);
+      fn.object[fn.property] = this.context[fn.name].apply(this.context, args);
+    }
+  }
+
+  dump() {
+    return this._dump(this, '');
+  }
+
+  _dump(obj, indent) {
+    var s = '{\n';
+    for (var path in obj.paths) {
+      s += indent + `path:${path} localObject:${obj.paths[path].localObject} referents:[`;
+      s += obj.paths[path].objects.map(a => `${a.object.dump()} ${a.path}`).join(',');
+      s += '] ';
+      s += this._dump(obj.paths[path], indent + '  ');
+    }
+    s += '}\n';
+    return s;
+  }
+}   
 
 function createBindingOrAttribute(element, context, attrib, value) {
-  console.log('cBoA', element.name, context.name, attrib, value);
   var result = /{{(.*)}}/.exec(value);
   if (result == null) {
     element[attrib] = value;
@@ -75,29 +158,21 @@ function createBindingOrAttribute(element, context, attrib, value) {
     value = value.split("(");
     var funcName = value[0];
     var args = value[1].split(")")[0].split(",").map(a => a.trim());
-    args.forEach(arg => hookProperty(context, arg, v => {
-      element[attrib] = context[funcName].apply(context, args.map(a => context[a]));
-    }));
+    context._changeBus.registerFunction(element, funcName, args, attrib);
     return true;
   }
-  var bindTo = result[1];
-  // note: this uses sync events in native polymer 1.0. It's probably fine
-  // to do this instead though.
-  hookProperty(element, attrib, v => context[value] = v);
+  context._changeBus.registerPath(element, value, attrib);
   return true;
 }
 
 function createTextBindingOrTextNode(context, data) {
+  var text_node = createTextNode(data);
   var result = /{{(.*)}}/.exec(data);
   if (result !== null) {
-    data = data.replace(/{{.*}}/, context[result[1]]);
-    var text_node = createTextNode(data);
-    if (context[result[1]] == undefined) {
-      hookProperty(context, result[1], v => text_node.text = v);
-    }
-    return text_node;
+    var resultBits = result[1].split('.');
+    context._changeBus.registerPath(text_node, result[1], 'text');
   }
-  return createTextNode(data);
+  return text_node;
 }
 
 function expandTemplate(template, element) {
@@ -115,6 +190,7 @@ function expandTemplate(template, element) {
       }
     }
   }
+  element._changeBus = new ChangeBus(element);
   processChildren(template.children, element);
 } 
 
@@ -123,10 +199,27 @@ function resolve(element, template) {
   element.template = template;
   template.defn.create && template.defn.create.call(element);
 
+  for (var fn in template.defn) {
+    if (typeof template.defn[fn] == 'function') {
+      console.log(`providing function ${fn} on ${element.dump()}`);
+      (function(fn) { element[fn] = function() { return template.defn[fn].apply(element, arguments); }; })(fn);
+    }
+  }
+
   expandTemplate(template.template, element);
 
-  for (var fn in template.defn) {
-    (function(fn) { element[fn] = function() { return template.defn[fn].apply(element, arguments); }; })(fn);
+  for (var property in template.defn.properties) {
+    var value = template.defn.properties[property];
+    if (typeof value != 'object')
+      element[property] = value;
+    else if (typeof value.value == 'function')
+      element[property] = value.value.call(element);
+    else if (typeof value.computed == 'string') { 
+      var computed = value.computed.split("(");
+      var funcName = computed[0];
+      var args = computed[1].split(")")[0].split(",").map(a => a.trim());
+      element._changeBus.registerFunction(element, funcName, args, property);
+    }
   }
 
   if (element.isAttached) {
@@ -153,9 +246,13 @@ function registerElementTemplate(name, templateElement) {
 
 function runIfScript(tag) {
   if (tag.type == 'script' && tag.name == 'script') {
-    if (tag.attribs.src == undefined)
-      eval(tag.children[0].data);
-    else {
+    if (tag.attribs.src == undefined) {
+      try {
+        eval(tag.children[0].data);
+      } catch (e) {
+        console.log(tag.children[0].data);
+      }
+    } else {
       var x = require('./' + tag.attribs.src);
       for (var key in x)
         global[key] = x[key];
@@ -219,7 +316,7 @@ var Element = {
     return s;
   },
   dump: function() {
-    return `<${this.name}>${this.innerHTML.trim()}</${this.name}>`;
+    return `<${this.name}></${this.name}>`;
   }
 }
 
@@ -238,7 +335,8 @@ global.createElement = function(name, attribs) {
 }
 
 var TextNode = {
-  attach: function() { }
+  attach: function() { },
+  dump: function() { return `[${this.text}]`; }
 }
 
 global.createTextNode = function(text) {

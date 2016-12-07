@@ -12,19 +12,19 @@ Polymer({
       global.app = express();
       global.app.listen(8080);
     }
+
   },
 
   attached: function() {
     console.log('attached a pbe-connection');
     global.app.get(this.route, function(req, res) {
       var el = createElement(this.kind);
+      var data = {}
       for (var param in req.params) {
-        el[param] = req.params[param];
+        data[param] = req.params[param];
       }
-      el.addEventListener('data-ready', function(e) {
-        res.status(200).send(el.response);
-        el.remove();
-      });
+      el.data = data;
+      el.dataReady.then(() => { res.status(200).send(el.response); el.remove(); });
       this.appendChild(el);
     }.bind(this));
   }

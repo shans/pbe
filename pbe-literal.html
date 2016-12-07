@@ -5,11 +5,19 @@
 Polymer({
   is: 'pbe-literal',
   properties: {
-    contents: { notify: true, value: "" }
+    contents: { notify: true, value: "" },
+    after: { value: function() { return new Promise((function(resolve, reject) { this.done = resolve; }).bind(this)); } },
+    await: undefined
+  },
+  extractContents: function() {
+    this.contents = this.innerHTML;
+    this.done();
   },
   attached: function() { 
-    this.contents = this.innerHTML;
-    this.fire('data-ready', {});
+    if (this.await)
+      this.await.then(this.extractContents);
+    else
+      this.extractContents();
   }
 });
 </script>

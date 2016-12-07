@@ -23,7 +23,7 @@ var save = function(obj, type, parent) {
 
 exports.save = save;
 
-var get = function(obj) {
-  return datastoreClient.getAsync(obj.key).then(entity => obj.data = entity);
+var get = function(obj, type, parent) {
+  return datastoreClient.getAsync(key([type, obj.key])).then(entity => obj.data = entity);
 }
 exports.get = get;
