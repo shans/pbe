@@ -6,7 +6,7 @@ Polymer({
   is: 'psi-fragment',
   properties: {
     contents: { notify: true, value: "" },
-    after: { value: function() { return new Promise((function(resolve, reject) { this.done = resolve; }).bind(this)); } },
+    resolves: { value: function() { return new Promise((function(resolve, reject) { this.done = resolve; }).bind(this)); } },
     await: undefined
   },
   extractContents: function() {

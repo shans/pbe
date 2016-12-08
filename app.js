@@ -1,4 +1,4 @@
 'use strict';
 
-var pbe = require('./pbe');
+var polymer = require('./polymer');
 createRoot('hello-world.html', 'hello-world');

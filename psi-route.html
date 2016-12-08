@@ -26,6 +26,7 @@ Polymer({
       el.route = route;
       // TODO consider using response.content, though this will mean that handlers must import
       // a behavior to set up 'response' as a property.
+      console.log(el.responseReady);
       el.responseReady.then(() => { res.status(200).send(el.response); el.remove(); });
       this.appendChild(el);
     }.bind(this));
