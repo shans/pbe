@@ -1,12 +1,12 @@
-<link rel="import" href="pbe-route.html">
-<link rel="import" href="pbe-fragment.html">
+<link rel="import" href="psi-route.html">
+<link rel="import" href="psi-fragment.html">
 <link rel="import" href="dao-library.html">
 
 <dom-module id="hello-world">
 <template>
-  <pbe-route handler="hello-world-handler" path="/hello/:key"></pbe-route>
-  <pbe-route handler="save-handler" path="/save/:author/:library/:likes"></pbe-route>
-  <pbe-route handler="get-handler" path="/load/:author/:library"></pbe-route>
+  <psi-route handler="hello-world-handler" path="/hello/:key"></psi-route>
+  <psi-route handler="save-handler" path="/save/:author/:library/:likes"></psi-route>
+  <psi-route handler="get-handler" path="/load/:author/:library"></psi-route>
 </template>
 <script>
 Polymer({
@@ -18,10 +18,10 @@ Polymer({
 
 <dom-module id="save-handler">
 <template>
-  <pbe-fragment contents="{{response}}" after="{{fragmentReady}}">
+  <psi-fragment contents="{{response}}" resolves="{{fragmentReady}}">
     Saved library <span>{{route.author}}</span>/<span>{{route.library}}</span> with <span>{{route.likes}}</span> likes
-  </pbe-fragment>
-  <dao-library key="{{makeKey(route.author, route.library)}}" data="{{route}}" autoSave='true' after="{{daoReady}}"></dao-library>
+  </psi-fragment>
+  <dao-library key="{{makeKey(route.author, route.library)}}" data="{{route}}" autoSave='true' resolves="{{daoReady}}"></dao-library>
 </template>
 </dom-module>
 <script>
@@ -38,10 +38,10 @@ Polymer({
 
 <dom-module id="get-handler">
 <template>
-  <pbe-fragment contents="{{response}}" await="{{dataStable}}" after="{{responseReady}}">
+  <psi-fragment contents="{{response}}" await="{{dataStable}}" resolves="{{responseReady}}">
     Retrieved library <span>{{route.author}}</span>/<span>{{route.library}}</span> with <span>{{route.likes}}</span> likes
-  </pbe-fragment>
-  <dao-library key="{{makeKey(route.author, route.library)}}" data="{{route}}" after="{{dataStable}}" autoLoad='true'></dao-library>
+  </psi-fragment>
+  <dao-library key="{{makeKey(route.author, route.library)}}" data="{{route}}" resolves="{{dataStable}}" autoLoad='true'></dao-library>
 </template>
 <script>
 Polymer({
@@ -53,9 +53,9 @@ Polymer({
 
 <dom-module id="hello-world-handler">
 <template>
-  <pbe-fragment contents="{{response}}" after="{{responseReady}}">
+  <psi-fragment contents="{{response}}" resolves="{{responseReady}}">
     Hello, <b>{{route.key}}</b> HOW ARE YOU
-  </pbe-fragment>
+  </psi-fragment>
 </template>
 <script>
 Polymer({

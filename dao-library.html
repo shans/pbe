@@ -11,7 +11,7 @@ Polymer({
     data: { value: function() { return {} } },
     autosave: { type: Boolean, value: false },
     isDataFetchObject: true,
-    after: { value: function() { return new Promise(function(resolve, reject) { this.done = resolve; }.bind(this)); } }
+    resolves: { value: function() { return new Promise(function(resolve, reject) { this.done = resolve; }.bind(this)); } }
   },
   save: function() {
     // TODO: make events look more like web platform events

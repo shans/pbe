@@ -1,9 +1,9 @@
-<dom-module id="pbe-route">
+<dom-module id="psi-route">
 <template>
 </template>
 <script>
 Polymer({
-  is: 'pbe-route',
+  is: 'psi-route',
 
   create: function() {
     // TODO: replace express with something much smaller
@@ -16,7 +16,7 @@ Polymer({
   },
 
   attached: function() {
-    console.log('attached a pbe-route');
+    console.log('attached a psi-route');
     global.app.get(this.path, function(req, res) {
       var el = createElement(this.handler);
       var route = {}
